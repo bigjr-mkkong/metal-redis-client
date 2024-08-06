@@ -7,9 +7,15 @@ fn main() -> redis::RedisResult<()> {
     
     let mut con = client.get_connection()?;
 
-    let resp:String = cmd("PING").query(&mut con).expect("Failed to receive response\n");
+    let ping_cmd = cmd("PING");
+
+    let resp:String = ping_cmd.query(&mut con)?;
 
     println!("{}", resp);
+
+    let packed_cmd = ping_cmd.get_packed_command();
+
+    println!("{}", String::from_utf8(packed_cmd).unwrap());
     
     Ok(())
 }
