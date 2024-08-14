@@ -16,21 +16,10 @@ fn open_pipe(_pipe_path: &str, readable: bool, writable: bool) -> std::io::Resul
 }
 
 
-fn main() -> redis::RedisResult<()> {
-    let client = redis::Client::open("redis://127.0.0.1")?;
-    let mut con = client.get_connection()?;
+fn send_recv(redis_cmd: &redis::Cmd) -> redis::RedisResult<String>{
+    let packed_cmd = redis_cmd.get_packed_command();
 
-    let ping_cmd = cmd("PING");
-
-    // let resp:String = ping_cmd.query(&mut con)?;
-    // println!("{}", resp);
-
-    let packed_cmd = ping_cmd.get_packed_command();
-
-
-    println!("{}", String::from_utf8(packed_cmd.clone()).unwrap());
-    
-
+    let mut retcmd = String::new();
     match open_pipe("/tmp/redis-pipe0", false, true) {
         Err(why) => {
             panic!("Failed to open pipe: {}", why);
@@ -45,12 +34,30 @@ fn main() -> redis::RedisResult<()> {
             panic!("Failed to open pipe: {}", why);
         }
         Ok(mut pipe1) => {
-            let mut retcmd = String::new();
             pipe1.read_to_string(&mut retcmd)?;
 
             println!("readed response: {}", retcmd);
         }
     };
+
+    Ok(retcmd)
+}
+
+
+fn main() -> redis::RedisResult<()> {
+    let client = redis::Client::open("redis://127.0.0.1")?;
+    let mut con = client.get_connection()?;
+
+    let ping_cmd = cmd("PING");
+
+    // let resp:String = ping_cmd.query(&mut con)?;
+    // println!("{}", resp);
+
+    let packed_cmd = ping_cmd.get_packed_command();
+
+    println!("{}", String::from_utf8(packed_cmd.clone()).unwrap());
+    
+    let _ = send_recv(&ping_cmd);
 
     Ok(())
 }
